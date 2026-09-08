@@ -7,7 +7,7 @@ src/gui.py
 utils для валидации и экспорта/импорта,
 analysis для вызова окон аналитики.
 """
-
+import tkinter.filedialog as filedialog
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
@@ -56,6 +56,8 @@ class MainApp:
         file_menu.add_separator()
         file_menu.add_command(label="Экспорт в JSON", command=self.export_json)
         file_menu.add_command(label="Импорт из JSON", command=self.import_json)
+        file_menu.add_separator()
+        file_menu.add_command(label="Очистить все данные", command=self.clear_all_data)
         file_menu.add_separator()
         file_menu.add_command(label="Выход", command=self.root.quit)
         menubar.add_cascade(label="Файл", menu=file_menu)
@@ -302,6 +304,7 @@ class MainApp:
     # ------------------- CRUD для клиентов -------------------
     def add_client(self) -> None:
         """Добавляет клиента из формы."""
+        print("[DEBUG] Вызван add_client")
         name = self.client_name_entry.get().strip()
         email = self.client_email_entry.get().strip()
         phone = self.client_phone_entry.get().strip()
@@ -321,11 +324,13 @@ class MainApp:
         try:
             client = Client(None, name, email, phone, date)
             self.db.add_client(client)
+            print(f"[DEBUG] Клиент {name} добавлен в БД")
             messagebox.showinfo("Успех", "Клиент добавлен!")
             self.clear_client_form()
             self.refresh_clients_table()
             self._refresh_client_combo()
         except Exception as e:
+            print(f"[ERROR] add_client: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def delete_client(self) -> None:
@@ -339,10 +344,28 @@ class MainApp:
         if messagebox.askyesno("Подтверждение", "Удалить клиента?"):
             try:
                 self.db.delete_client(client_id)
+                print(f"[DEBUG] Клиент с ID {client_id} удалён")
                 self.refresh_clients_table()
                 self._refresh_client_combo()
             except Exception as e:
+                print(f"[ERROR] delete_client: {e}")
                 messagebox.showerror("Ошибка", str(e))
+    def clear_all_data(self) -> None:
+        """
+        Полностью очищает все данные из БД после подтверждения пользователя.
+        """
+        if messagebox.askyesno(
+            "Подтверждение очистки",
+            "Вы уверены, что хотите удалить ВСЕ данные (клиентов, товары, заказы)?\n"
+            "Это действие необратимо!",
+            icon='warning'
+        ):
+            try:
+                self.db.clear_all_data()
+                self.refresh_all_tables()
+                messagebox.showinfo("Успех", "Все данные успешно очищены.")
+            except Exception as e:
+                messagebox.showerror("Ошибка", f"Не удалось очистить данные: {e}")
 
     def clear_client_form(self) -> None:
         """Очищает поля формы клиента."""
@@ -354,6 +377,7 @@ class MainApp:
 
     def refresh_clients_table(self) -> None:
         """Обновляет таблицу клиентов."""
+        print("[DEBUG] refresh_clients_table")
         for item in self.clients_tree.get_children():
             self.clients_tree.delete(item)
         clients = self.db.get_all_clients()
@@ -369,21 +393,21 @@ class MainApp:
         if not search_text:
             self.refresh_clients_table()
             return
-        # Используем прямой запрос к БД
+        print(f"[DEBUG] Поиск клиентов по: {search_text}")
         for item in self.clients_tree.get_children():
             self.clients_tree.delete(item)
-        # Получаем через менеджер (добавим метод в db.py для поиска)
-        # Временно реализуем фильтрацию через получение всех и проверку
         all_clients = self.db.get_all_clients()
         filtered = [c for c in all_clients if search_text.lower() in c.name.lower()]
         for c in filtered:
             self.clients_tree.insert("", tk.END, values=(
                 c.id, c.name, c.email, c.phone, c.registration_date
             ))
+        print(f"[DEBUG] Найдено {len(filtered)} клиентов")
 
     # ------------------- CRUD для товаров -------------------
     def add_product(self) -> None:
         """Добавляет товар."""
+        print("[DEBUG] Вызван add_product")
         name = self.product_name_entry.get().strip()
         price_str = self.product_price_entry.get().strip()
         category = self.product_category_entry.get().strip()
@@ -402,11 +426,13 @@ class MainApp:
         try:
             product = Product(None, name, price, category)
             self.db.add_product(product)
+            print(f"[DEBUG] Товар {name} добавлен в БД")
             messagebox.showinfo("Успех", "Товар добавлен!")
             self.clear_product_form()
             self.refresh_products_table()
             self._refresh_product_combo()
         except Exception as e:
+            print(f"[ERROR] add_product: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def delete_product(self) -> None:
@@ -420,9 +446,11 @@ class MainApp:
         if messagebox.askyesno("Подтверждение", "Удалить товар?"):
             try:
                 self.db.delete_product(product_id)
+                print(f"[DEBUG] Товар с ID {product_id} удалён")
                 self.refresh_products_table()
                 self._refresh_product_combo()
             except Exception as e:
+                print(f"[ERROR] delete_product: {e}")
                 messagebox.showerror("Ошибка", str(e))
 
     def clear_product_form(self) -> None:
@@ -433,6 +461,7 @@ class MainApp:
 
     def refresh_products_table(self) -> None:
         """Обновляет таблицу товаров."""
+        print("[DEBUG] refresh_products_table")
         for item in self.products_tree.get_children():
             self.products_tree.delete(item)
         products = self.db.get_all_products()
@@ -444,6 +473,7 @@ class MainApp:
     # ------------------- Работа с заказами -------------------
     def add_order_item(self) -> None:
         """Добавляет товар в корзину заказа."""
+        print("[DEBUG] add_order_item")
         product_selection = self.order_product_var.get()
         if not product_selection:
             messagebox.showwarning("Ошибка", "Выберите товар!")
@@ -470,14 +500,15 @@ class MainApp:
             return
 
         # Добавляем в корзину
-        # Если товар уже есть, увеличиваем количество
         for i, (pid, name, qty) in enumerate(self.order_cart):
             if pid == product_id:
                 self.order_cart[i] = (pid, name, qty + quantity)
                 self._update_cart_listbox()
+                print(f"[DEBUG] Обновлено количество товара {name} до {qty + quantity}")
                 return
         self.order_cart.append((product_id, product.name, quantity))
         self._update_cart_listbox()
+        print(f"[DEBUG] Товар {product.name} добавлен в корзину, кол-во: {quantity}")
         messagebox.showinfo("Успех", f"Товар {product.name} добавлен в корзину")
 
     def _update_cart_listbox(self) -> None:
@@ -490,9 +521,11 @@ class MainApp:
         """Очищает корзину."""
         self.order_cart = []
         self._update_cart_listbox()
+        print("[DEBUG] Корзина очищена")
 
     def create_order(self) -> None:
         """Оформляет заказ."""
+        print("[DEBUG] create_order")
         client_selection = self.order_client_var.get()
         if not client_selection:
             messagebox.showwarning("Ошибка", "Выберите клиента!")
@@ -528,10 +561,12 @@ class MainApp:
 
         try:
             self.db.add_order(order, prices)
+            print(f"[DEBUG] Заказ создан для клиента {client_id}, сумма {order.total_price}")
             messagebox.showinfo("Успех", "Заказ оформлен!")
             self.clear_order_cart()
             self.refresh_orders_table()
         except Exception as e:
+            print(f"[ERROR] create_order: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def delete_order(self) -> None:
@@ -545,12 +580,15 @@ class MainApp:
         if messagebox.askyesno("Подтверждение", "Удалить заказ?"):
             try:
                 self.db.delete_order(order_id)
+                print(f"[DEBUG] Заказ с ID {order_id} удалён")
                 self.refresh_orders_table()
             except Exception as e:
+                print(f"[ERROR] delete_order: {e}")
                 messagebox.showerror("Ошибка", str(e))
 
     def refresh_orders_table(self) -> None:
         """Обновляет таблицу заказов (без фильтра)."""
+        print("[DEBUG] refresh_orders_table")
         self.order_filter_from.delete(0, tk.END)
         self.order_filter_to.delete(0, tk.END)
         self._display_orders(self.db.get_all_orders())
@@ -559,8 +597,6 @@ class MainApp:
         """Отображает список заказов в таблице."""
         for item in self.orders_tree.get_children():
             self.orders_tree.delete(item)
-        # orders_data – список словарей, полученных из db.get_all_orders()
-        # Для отображения имени клиента нужно получить клиента по id
         clients = {c.id: c.name for c in self.db.get_all_clients()}
         for order in orders_data:
             client_name = clients.get(order['client_id'], "Неизвестно")
@@ -574,13 +610,13 @@ class MainApp:
 
     def filter_orders(self) -> None:
         """Фильтрует заказы по дате."""
+        print("[DEBUG] filter_orders")
         from_date = self.order_filter_from.get().strip()
         to_date = self.order_filter_to.get().strip()
         if not from_date or not to_date:
             messagebox.showwarning("Ошибка", "Введите обе даты в формате ГГГГ-ММ-ДД")
             return
         try:
-            # Проверяем формат дат
             datetime.strptime(from_date, "%Y-%m-%d")
             datetime.strptime(to_date, "%Y-%m-%d")
         except ValueError:
@@ -588,45 +624,57 @@ class MainApp:
             return
         try:
             filtered = self.db.get_orders_by_date_range(from_date, to_date)
-            # convert to list of dicts with needed keys
+            print(f"[DEBUG] Найдено {len(filtered)} заказов в диапазоне")
             self._display_orders(filtered)
         except Exception as e:
+            print(f"[ERROR] filter_orders: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def sort_orders_by(self, sort_by: str) -> None:
         """Сортирует текущие заказы в таблице по указанному полю."""
+        print(f"[DEBUG] sort_orders_by: {sort_by}")
         # Получаем текущие данные из таблицы (парсим строки)
         rows = []
         for child in self.orders_tree.get_children():
             values = self.orders_tree.item(child)['values']
-            # Преобразуем в словарь для сортировки
             row_dict = {
-                'id': values[0],
-                'client_id': values[1],
+                'id': int(values[0]),
+                'client_id': int(values[1]),
                 'order_date': values[3],
                 'total_price': float(values[4])
             }
             rows.append(row_dict)
         if not rows:
+            print("[DEBUG] Нет строк для сортировки")
             return
         try:
-            sorted_rows = sort_orders(rows, sort_by=sort_by, reverse=False)
+            # Определяем ключевую функцию для сортировки
+            if sort_by == 'order_date':
+                key_func = lambda x: x['order_date']
+            elif sort_by == 'total_price':
+                key_func = lambda x: x['total_price']
+            else:
+                messagebox.showerror("Ошибка", "Неизвестное поле для сортировки")
+                return
+            sorted_rows = sort_orders(rows, key_func, reverse=False)
+            print("[DEBUG] Сортировка выполнена")
             self._display_orders(sorted_rows)
         except Exception as e:
+            print(f"[ERROR] sort_orders_by: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     # ------------------- Экспорт/Импорт -------------------
     def export_csv(self) -> None:
         """Экспорт данных (всех таблиц) в CSV."""
+        print("[DEBUG] export_csv вызван")
         filename = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
         if not filename:
+            print("[DEBUG] export_csv отменён пользователем")
             return
         try:
-            # Экспортируем клиентов, товары, заказы в один файл
             clients = [c.to_dict() for c in self.db.get_all_clients()]
             products = [p.to_dict() for p in self.db.get_all_products()]
             orders = self.db.get_all_orders()
-            # Преобразуем заказы в плоские словари (без вложенных items)
             orders_flat = []
             for o in orders:
                 orders_flat.append({
@@ -640,28 +688,34 @@ class MainApp:
                 'products': products,
                 'orders': orders_flat
             }
-            # Сохраняем как JSON, т.к. CSV не поддерживает вложенность
-            export_to_json(data, filename)
+            export_to_json(data, filename)  # сохраняем как JSON, т.к. CSV не поддерживает вложенность
+            print(f"[DEBUG] Данные экспортированы в {filename}")
             messagebox.showinfo("Успех", f"Данные экспортированы в {filename}")
         except Exception as e:
+            print(f"[ERROR] export_csv: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def import_csv(self) -> None:
-        """Импорт данных из CSV (ожидается структура как при экспорте)."""
+        """Импорт данных из CSV (упрощённо)."""
+        print("[DEBUG] import_csv вызван")
         filename = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not filename:
+            print("[DEBUG] import_csv отменён пользователем")
             return
         try:
             data = import_from_csv(filename)
-            # Здесь надо разобрать структуру и добавить в БД (упрощённо)
+            print("[DEBUG] CSV прочитан, но импорт не реализован")
             messagebox.showinfo("Информация", "Импорт из CSV не реализован полностью (используйте JSON)")
         except Exception as e:
+            print(f"[ERROR] import_csv: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def export_json(self) -> None:
         """Экспорт данных в JSON."""
+        print("[DEBUG] export_json вызван")
         filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
         if not filename:
+            print("[DEBUG] export_json отменён пользователем")
             return
         try:
             clients = [c.to_dict() for c in self.db.get_all_clients()]
@@ -673,51 +727,101 @@ class MainApp:
                 'orders': orders
             }
             export_to_json(data, filename)
+            print(f"[DEBUG] Данные экспортированы в {filename}")
             messagebox.showinfo("Успех", f"Данные экспортированы в {filename}")
         except Exception as e:
+            print(f"[ERROR] export_json: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     def import_json(self) -> None:
-        """Импорт данных из JSON."""
+        """Импорт данных из JSON-файла."""
+        print("[DEBUG] import_json вызван")
         filename = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
         if not filename:
+            print("[DEBUG] import_json отменён пользователем")
             return
+
         try:
             data = import_from_json(filename)
-            # Проверяем структуру
-            if 'clients' in data:
-                for c in data['clients']:
-                    client = Client(None, c['name'], c['email'], c['phone'], c.get('registration_date', datetime.now().strftime("%Y-%m-%d")))
-                    try:
-                        self.db.add_client(client)
-                    except Exception:
-                        pass  # пропускаем дубликаты
-            if 'products' in data:
-                for p in data['products']:
-                    product = Product(None, p['name'], p['price'], p['category'])
-                    try:
-                        self.db.add_product(product)
-                    except Exception:
-                        pass
-            if 'orders' in data:
-                # Сначала нужно заполнить клиентов и товары, потом заказы – упрощаем
-                messagebox.showinfo("Информация", "Импорт заказов из JSON требует дополнительной логики (пропущено)")
+            print(f"[DEBUG] Данные из JSON: {type(data)}")
+            if data is None:
+                return
+
+            added_clients = 0
+            added_products = 0
+
+            # Обработка списка (если JSON — массив объектов)
+            if isinstance(data, list):
+                for item in data:
+                    if 'name' in item and 'email' in item:
+                        client = Client(None, item['name'], item['email'],
+                                        item.get('phone', ''),
+                                        item.get('registration_date', datetime.now().strftime("%Y-%m-%d")))
+                        try:
+                            self.db.add_client(client)
+                            added_clients += 1
+                            print(f"[DEBUG] Клиент {item['name']} добавлен")
+                        except Exception as e:
+                            print(f"[ERROR] Клиент {item['name']} не добавлен: {e}")
+                    elif 'name' in item and 'price' in item:
+                        product = Product(None, item['name'], item['price'], item.get('category', ''))
+                        try:
+                            self.db.add_product(product)
+                            added_products += 1
+                            print(f"[DEBUG] Товар {item['name']} добавлен")
+                        except Exception as e:
+                            print(f"[ERROR] Товар {item['name']} не добавлен: {e}")
+
+            # Обработка словаря с ключами
+            elif isinstance(data, dict):
+                if 'clients' in data:
+                    for c in data['clients']:
+                        client = Client(None, c['name'], c['email'],
+                                        c.get('phone', ''),
+                                        c.get('registration_date', datetime.now().strftime("%Y-%m-%d")))
+                        try:
+                            self.db.add_client(client)
+                            added_clients += 1
+                            print(f"[DEBUG] Клиент {c['name']} добавлен")
+                        except Exception as e:
+                            print(f"[ERROR] Клиент {c['name']} не добавлен: {e}")
+                if 'products' in data:
+                    for p in data['products']:
+                        product = Product(None, p['name'], p['price'], p.get('category', ''))
+                        try:
+                            self.db.add_product(product)
+                            added_products += 1
+                            print(f"[DEBUG] Товар {p['name']} добавлен")
+                        except Exception as e:
+                            print(f"[ERROR] Товар {p['name']} не добавлен: {e}")
+                if 'orders' in data:
+                    print("[DEBUG] Импорт заказов пропущен (можно доработать)")
+            else:
+                messagebox.showerror("Ошибка", "Неизвестный формат JSON")
+                return
+
             self.refresh_all_tables()
-            messagebox.showinfo("Успех", "Данные импортированы")
+            messagebox.showinfo("Успех", f"Импортировано клиентов: {added_clients}, товаров: {added_products}")
+            print(f"[DEBUG] Импорт завершён: клиентов {added_clients}, товаров {added_products}")
+
         except Exception as e:
+            print(f"[ERROR] import_json: {e}")
             messagebox.showerror("Ошибка", str(e))
 
     # ------------------- Аналитика -------------------
     def show_analytics(self) -> None:
         """Показывает окно с аналитикой."""
+        print("[DEBUG] show_analytics вызван")
         try:
             show_analysis_window(self.db)
         except Exception as e:
+            print(f"[ERROR] show_analytics: {e}")
             messagebox.showerror("Ошибка", f"Не удалось открыть аналитику: {e}")
 
     # ------------------- Общие методы -------------------
     def refresh_all_tables(self) -> None:
         """Обновляет все таблицы."""
+        print("[DEBUG] refresh_all_tables")
         self.refresh_clients_table()
         self.refresh_products_table()
         self.refresh_orders_table()

@@ -26,7 +26,6 @@ class DatabaseManager:
     cursor : sqlite3.Cursor
         Курсор для выполнения запросов.
     """
-
     def __init__(self, db_path: str = "data/orders.db") -> None:
         """
         Инициализирует менеджер, создаёт подключение и таблицы.
@@ -229,7 +228,27 @@ class DatabaseManager:
             raise RuntimeError(f"Ошибка удаления клиента: {e}")
 
     # ------------------- Товары -------------------
-
+    def clear_all_data(self) -> None:
+        """
+        Удаляет все записи из всех таблиц и сбрасывает автоинкремент.
+        """
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("PRAGMA foreign_keys = OFF;")
+            cursor.execute("DELETE FROM order_items;")
+            cursor.execute("DELETE FROM orders;")
+            cursor.execute("DELETE FROM products;")
+            cursor.execute("DELETE FROM clients;")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='clients';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='products';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='orders';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='order_items';")
+            cursor.execute("PRAGMA foreign_keys = ON;")
+            self.connection.commit()
+            print("[DEBUG] Все данные очищены")
+        except Exception as e:
+            self.connection.rollback()
+            raise RuntimeError(f"Ошибка при очистке данных: {e}")
     def add_product(self, product: Product) -> int:
         """Добавляет товар."""
         try:
