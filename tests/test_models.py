@@ -3,20 +3,24 @@ from src.models import Client, Product, Order
 
 class TestModels(unittest.TestCase):
     def test_client_creation(self):
-        client = Client("Иван", "ivan@mail.ru", "+79991234567")
+        client = Client(1, "Иван", "ivan@mail.ru", "+79991234567", "2025-01-01")
+        self.assertEqual(client.id, 1)
         self.assertEqual(client.name, "Иван")
         self.assertEqual(client.email, "ivan@mail.ru")
-        d = client.to_dict()
-        self.assertIn("name", d)
 
     def test_product_creation(self):
-        prod = Product("Ноутбук", 50000, "Электроника")
+        prod = Product(1, "Ноутбук", 50000, "Электроника")
+        self.assertEqual(prod.id, 1)
+        self.assertEqual(prod.name, "Ноутбук")
         self.assertEqual(prod.price, 50000)
 
     def test_order_creation(self):
-        order = Order(client_id=1, products=[(2, 1), (3, 2)], total_price=1500)
+        items = [(2, 1), (3, 2)]  # product_id, quantity
+        order = Order(1, client_id=1, items=items, order_date="2025-01-01")
+        self.assertEqual(order.id, 1)
         self.assertEqual(order.client_id, 1)
-        self.assertEqual(len(order.products), 2)
-
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual(len(order.items), 2)
+        # Проверка пересчёта total_price
+        prices = {2: 1000, 3: 250}
+        order.recalculate_total(prices)
+        self.assertEqual(order.total_price, 1000*1 + 250*2)

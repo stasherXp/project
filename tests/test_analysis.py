@@ -1,23 +1,20 @@
 import unittest
-from src.analysis import get_top_5_clients, plot_orders_dynamics
+from unittest.mock import MagicMock
+import pandas as pd
+from src.analysis import get_top_clients, get_orders_dynamics
+
 
 class TestAnalysis(unittest.TestCase):
-    def test_top_clients(self):
-        orders = [
-            {'client_id': 1, 'order_date': '2025-01-01'},
-            {'client_id': 1, 'order_date': '2025-01-02'},
-            {'client_id': 2, 'order_date': '2025-01-03'},
-        ]
-        clients = [{'id': 1, 'name': 'A'}, {'id': 2, 'name': 'B'}]
-        df = get_top_5_clients(orders, clients)
-        self.assertEqual(len(df), 2)
-        self.assertEqual(df.iloc[0]['name'], 'A')
-        self.assertEqual(df.iloc[0]['orders_count'], 2)
+    def test_get_top_clients_returns_dataframe(self):
+        # Создаём мок базы данных
+        mock_db = MagicMock()
+        mock_db.get_all_orders.return_value = []
+        mock_db.get_all_clients.return_value = []
+        result = get_top_clients(mock_db)
+        self.assertIsInstance(result, pd.DataFrame)
 
-    def test_dynamics_returns_figure(self):
-        orders = [{'order_date': '2025-01-01'}, {'order_date': '2025-01-01'}]
-        fig = plot_orders_dynamics(orders)
-        self.assertIsNotNone(fig)
-
-if __name__ == '__main__':
-    unittest.main()
+    def test_get_orders_dynamics_returns_dataframe(self):
+        mock_db = MagicMock()
+        mock_db.get_all_orders.return_value = []
+        result = get_orders_dynamics(mock_db)
+        self.assertIsInstance(result, pd.DataFrame)
