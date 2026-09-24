@@ -1,7 +1,33 @@
-venv/ 
-__pycache__/ 
-*.pyc 
-*.db 
-.env 
-*.log 
-data/ 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# PyInstaller (сборка)
+build/
+*.manifest
+
+# Данные (генерируются автоматически)
+data/*.xlsx
+data/*.json
+
+# Логи
+*.log
+
+# Специфичное для ОС
+.DS_Store
+Thumbs.db
+desktop.ini
