@@ -16,10 +16,6 @@ except Exception:
 
 
 def get_top_clients(db, top_n: int = 5):
-    """
-    Возвращает топ-N клиентов по числу заказов.
-    Формат: [{'client_id': int, 'name': str, 'orders_count': int}, ...]
-    """
     orders = db.get_all_orders()
     counts = {}
     for o in orders:
@@ -34,10 +30,6 @@ def get_top_clients(db, top_n: int = 5):
 
 
 def get_orders_dynamics(db):
-    """
-    Возвращает динамику заказов по датам.
-    Формат: [{'order_date': str, 'orders_count': int}, ...]
-    """
     orders = db.get_all_orders()
     counts = {}
     for o in orders:
@@ -47,60 +39,51 @@ def get_orders_dynamics(db):
 
 
 def show_analysis_window(db) -> None:
-    """Открывает окно аналитики."""
     window = tk.Toplevel()
     window.title("Аналитика")
-    window.geometry("1000x650")
+    window.geometry("1000x600")
     if HAS_MPL:
         _show_mpl(db, window)
     else:
         _show_canvas(db, window)
 
 
-def _show_mpl(db, window) -> None:
-    """Графики через matplotlib."""
+def _show_mpl(db, window):
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
 
-    fig = Figure(figsize=(10, 5.5))
+    fig = Figure(figsize=(10, 5))
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
 
-    # Топ клиентов
     data = get_top_clients(db)
     if data:
         names = [d["name"] for d in data]
         vals = [d["orders_count"] for d in data]
         ax1.bar(names, vals, color="#4a90d9")
         ax1.set_title("Топ-5 клиентов по числу заказов")
-        ax1.set_ylabel("Количество заказов")
         ax1.tick_params(axis="x", rotation=30)
     else:
         ax1.text(0.5, 0.5, "Нет данных", ha="center", va="center")
-        ax1.set_title("Топ-5 клиентов")
 
-    # Динамика
     dyn = get_orders_dynamics(db)
     if dyn:
         dates = [d["order_date"] for d in dyn]
         vals = [d["orders_count"] for d in dyn]
         ax2.plot(dates, vals, marker="o", color="blue")
         ax2.set_title("Динамика заказов по датам")
-        ax2.set_ylabel("Количество заказов")
         ax2.tick_params(axis="x", rotation=45)
         ax2.grid(True)
     else:
         ax2.text(0.5, 0.5, "Нет данных", ha="center", va="center")
-        ax2.set_title("Динамика заказов")
 
-    fig.tight_layout()
     canvas = FigureCanvasTkAgg(fig, master=window)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
 
-def _show_canvas(db, window) -> None:
-    """Графики через tkinter.Canvas (если matplotlib недоступен)."""
+def _show_canvas(db, window):
+    """Графики на чистом tkinter.Canvas — без matplotlib."""
     tk.Label(window, text="Топ-5 клиентов по числу заказов",
              font=("Arial", 11, "bold")).pack(pady=5)
     c1 = tk.Canvas(window, width=900, height=200, bg="white")

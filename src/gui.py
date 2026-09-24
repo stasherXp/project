@@ -1,18 +1,12 @@
 """
 src/gui.py
-
-Главный модуль графического интерфейса на tkinter.
-Реализует три вкладки: Клиенты, Товары, Заказы.
-Использует DatabaseManager для работы с БД,
-utils для валидации и экспорта/импорта,
-analysis для вызова окон аналитики.
 """
 import tkinter.filedialog as filedialog
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 
-from src.db import DatabaseManager
+from src.excel_db import ExcelDatabaseManager
 from src.models import Client, Product, Order
 from src.utils import (
     validate_email,
@@ -36,7 +30,7 @@ class MainApp:
         self.root.minsize(800, 600)
 
         # Подключение к БД
-        self.db = DatabaseManager()
+        self.db = ExcelDatabaseManager()
 
         # Создание интерфейса
         self._setup_menu()
